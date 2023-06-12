@@ -1,4 +1,4 @@
-module go.flow.arcalot.io/plugintestimpl
+module go.flow.arcalot.io/testplugin
 
 go 1.18
 
