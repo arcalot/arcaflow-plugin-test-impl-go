@@ -1,7 +1,7 @@
 package main
 
 import (
-	testimplplugin "go.flow.arcalot.io/plugin-test-impl"
+	testimplplugin "go.flow.arcalot.io/plugintestimpl"
 
 	"go.flow.arcalot.io/pluginsdk/plugin"
 )
