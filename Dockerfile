@@ -3,10 +3,10 @@ FROM golang:1.18-alpine AS build
 ENV CGO_ENABLED=0
 COPY . /src
 WORKDIR /src
-RUN go build -o test-impl-plugin cmd/test-impl-plugin/main.go
+RUN go build -o plugin-test-impl cmd/plugin-test-impl/main.go
 
 FROM scratch
-COPY --from=build /src/test-impl-plugin /test-impl-plugin
+COPY --from=build /src/plugin-test-impl /plugin-test-impl
 WORKDIR /
-ENTRYPOINT ["/test-impl-plugin"]
+ENTRYPOINT ["/plugin-test-impl"]
 CMD []
