@@ -12,8 +12,12 @@ github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcY
 go.arcalot.io/assert v1.3.0 h1:+uQex4s9gezATpTyFxUY5dlAcrwI1Me5fSmdcydGHho=
 go.arcalot.io/log/v2 v2.0.0 h1:mbmsWDVBXZNWrDzUh5JLzeGCQ59kTuMFs+pyfJGc1hk=
 go.arcalot.io/log/v2 v2.0.0/go.mod h1:1V8jnFIIGwh2CtcGkHNOmy1nCo7LbazQNkUcnKYNMn4=
-go.flow.arcalot.io/pluginsdk v0.2.0 h1:nPR4Jug9gX2KKLD75RHGf9H+ea4KN3SfLMSBHr8/s/M=
-go.flow.arcalot.io/pluginsdk v0.2.0/go.mod h1:7cEk8LSxpZakyfrmKTPbiMhlrZvWtCPYcaI7qfSu8MM=
+go.flow.arcalot.io/pluginsdk v0.3.0-beta.1.0.20230621211135-e768c231a497 h1:xvzogIEgH1g8pxCAJ/LIedMpu5gj+WQi+96aAZMvD8w=
+go.flow.arcalot.io/pluginsdk v0.3.0-beta.1.0.20230621211135-e768c231a497/go.mod h1:7cEk8LSxpZakyfrmKTPbiMhlrZvWtCPYcaI7qfSu8MM=
+go.flow.arcalot.io/pluginsdk v0.3.0-beta.1.0.20230621213300-bd4be567c2e1 h1:jf8LdR91A00VkzrsBmu2vufX1MaNp3RBBUyEpwxpeRY=
+go.flow.arcalot.io/pluginsdk v0.3.0-beta.1.0.20230621213300-bd4be567c2e1/go.mod h1:7cEk8LSxpZakyfrmKTPbiMhlrZvWtCPYcaI7qfSu8MM=
+go.flow.arcalot.io/pluginsdk v0.4.0-beta.1 h1:ER/XPhhp2QNEC/oPNvdKPh7tRoc1HBD0NGno1nomscw=
+go.flow.arcalot.io/pluginsdk v0.4.0-beta.1/go.mod h1:sk4Vj6E25YhfrG7+hIg0T9AZ/zygv0vPqiFF5OCEJAk=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f h1:BLraFXnmrev5lT+xlilqcH8XK9/i0At2xKjWk4p6zsU=
 gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

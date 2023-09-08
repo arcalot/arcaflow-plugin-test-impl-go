@@ -3,6 +3,7 @@ package arcaflow_plugin_test_impl_go
 import (
 	"context"
 	"fmt"
+	"go.flow.arcalot.io/pluginsdk/plugin"
 	"go.flow.arcalot.io/pluginsdk/schema"
 	"time"
 )
@@ -71,25 +72,45 @@ var outputSchema = schema.NewScopeSchema(
 	),
 )
 
-func wait_(ctx context.Context, input Input) (string, any) {
+func cancelWait_(ctx context.Context, waitData *WaitStepData, input plugin.CancelInput) {
+	waitData.cancellationChannel <- true
+}
+
+func wait_(ctx context.Context, waitData *WaitStepData, input Input) (string, any) {
 	start := time.Now()
 	select {
 	case <-time.After(time.Duration(input.WaitTime) * time.Millisecond):
 		return "success", Output{
 			fmt.Sprintf("Plugin slept for %d ms.", input.WaitTime),
 		}
-	case <-ctx.Done(): // Cancelled
+	case <-ctx.Done(): // Terminated
+		duration := time.Since(start)
+		return "terminated_early", Output{
+			fmt.Sprintf("Plugin cancelled early due to context done after %d ms after scheduled to sleep for %d ms.",
+				duration.Milliseconds(), input.WaitTime),
+		}
+	case _ = <-waitData.cancellationChannel: // Cancelled
 		duration := time.Since(start)
 		return "cancelled_early", Output{
-			fmt.Sprintf("Plugin cancelled early after %d ms after scheduled to sleep for %d ms.",
+			fmt.Sprintf("Plugin cancelled early from signal after %d ms after scheduled to sleep for %d ms.",
 				duration.Milliseconds(), input.WaitTime),
 		}
 	}
 
 }
 
+type WaitStepData struct {
+	cancellationChannel chan bool
+}
+
+func waitInitializer_() *WaitStepData {
+	return &WaitStepData{
+		make(chan bool, 0),
+	}
+}
+
 var WaitSchema = schema.NewCallableSchema(
-	schema.NewCallableStep[Input](
+	schema.NewCallableStepWithSignals[*WaitStepData, Input](
 		// ID of the step:
 		"wait",
 		// Add the input schema:
@@ -115,13 +136,28 @@ var WaitSchema = schema.NewCallableSchema(
 				),
 				false,
 			),
+			"terminated_early": schema.NewStepOutputSchema(
+				outputSchema,
+				schema.NewDisplayValue(
+					schema.PointerTo("Terminated Early"),
+					schema.PointerTo("Was terminated before the expected wait period passed."),
+					nil,
+				),
+				false,
+			),
 		},
+		map[string]schema.CallableSignal{
+			plugin.CancellationSignalSchema.ID(): schema.NewCallableSignalFromSchema(plugin.CancellationSignalSchema, cancelWait_),
+		},
+		// No emitted signals
+		map[string]*schema.SignalSchema{},
 		// Metadata for the function:
 		schema.NewDisplayValue(
 			schema.PointerTo("Wait"),
 			schema.PointerTo("Wait for specified time."),
 			nil,
 		),
+		waitInitializer_,
 		// Reference the function
 		wait_,
 	),

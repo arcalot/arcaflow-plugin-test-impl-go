@@ -2,7 +2,7 @@ module go.flow.arcalot.io/testplugin
 
 go 1.18
 
-require go.flow.arcalot.io/pluginsdk v0.2.0
+require go.flow.arcalot.io/pluginsdk v0.4.0-beta.1
 
 require (
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
