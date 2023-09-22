@@ -8,16 +8,66 @@ import (
 	"time"
 )
 
-type Input struct {
+type HelloWorldInput struct {
+	fail bool
+}
+
+type HelloWorldOutput struct {
+}
+
+var helloWorldInputSchema = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[HelloWorldInput](
+		"hello-input",
+		map[string]*schema.PropertySchema{
+			"fail": schema.NewPropertySchema(
+				schema.NewBoolSchema(),
+				schema.NewDisplayValue(
+					schema.PointerTo("fail"),
+					schema.PointerTo("Determines whether the output should be success or error."),
+					nil,
+				),
+				// Required:
+				true,
+				// Required if:
+				[]string{},
+				// Required if not:
+				[]string{},
+				// Conflicts:
+				[]string{},
+				// Default value, JSON encoded:
+				schema.PointerTo("false"),
+				//Examples:
+				nil,
+			),
+		},
+	),
+)
+
+var helloWorldOutputSchema = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[HelloWorldOutput](
+		"hello-output",
+		map[string]*schema.PropertySchema{},
+	),
+)
+
+func helloWorld_(ctx context.Context, input HelloWorldInput) (string, any) {
+	if input.fail {
+		return "error", HelloWorldOutput{}
+	} else {
+		return "success", HelloWorldOutput{}
+	}
+}
+
+type WaitInput struct {
 	WaitTime int `json:"wait_time_ms"`
 }
 
 // We define a separate scope, so we can add subobjects later.
-var inputSchema = schema.NewScopeSchema(
+var waitInputSchema = schema.NewScopeSchema(
 	// Struct-mapped object schemas are object definitions that are mapped to a specific struct (Input)
-	schema.NewStructMappedObjectSchema[Input](
+	schema.NewStructMappedObjectSchema[WaitInput](
 		// ID for the object:
-		"input",
+		"wait-input",
 		// Properties of the object:
 		map[string]*schema.PropertySchema{
 			"wait_time_ms": schema.NewPropertySchema(
@@ -46,12 +96,12 @@ var inputSchema = schema.NewScopeSchema(
 	),
 )
 
-type Output struct {
+type WaitOutput struct {
 	Message string `json:"message"`
 }
 
-var outputSchema = schema.NewScopeSchema(
-	schema.NewStructMappedObjectSchema[Output](
+var waitOutputSchema = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[WaitOutput](
 		"output",
 		map[string]*schema.PropertySchema{
 			"message": schema.NewPropertySchema(
@@ -76,22 +126,22 @@ func cancelWait_(ctx context.Context, waitData *WaitStepData, input plugin.Cance
 	waitData.cancellationChannel <- true
 }
 
-func wait_(ctx context.Context, waitData *WaitStepData, input Input) (string, any) {
+func wait_(ctx context.Context, waitData *WaitStepData, input WaitInput) (string, any) {
 	start := time.Now()
 	select {
 	case <-time.After(time.Duration(input.WaitTime) * time.Millisecond):
-		return "success", Output{
+		return "success", WaitOutput{
 			fmt.Sprintf("Plugin slept for %d ms.", input.WaitTime),
 		}
 	case <-ctx.Done(): // Terminated
 		duration := time.Since(start)
-		return "terminated_early", Output{
+		return "terminated_early", WaitOutput{
 			fmt.Sprintf("Plugin cancelled early due to context done after %d ms after scheduled to sleep for %d ms.",
 				duration.Milliseconds(), input.WaitTime),
 		}
 	case _ = <-waitData.cancellationChannel: // Cancelled
 		duration := time.Since(start)
-		return "cancelled_early", Output{
+		return "cancelled_early", WaitOutput{
 			fmt.Sprintf("Plugin cancelled early from signal after %d ms after scheduled to sleep for %d ms.",
 				duration.Milliseconds(), input.WaitTime),
 		}
@@ -109,17 +159,17 @@ func waitInitializer_() *WaitStepData {
 	}
 }
 
-var WaitSchema = schema.NewCallableSchema(
-	schema.NewCallableStepWithSignals[*WaitStepData, Input](
+var TestStepsSchema = schema.NewCallableSchema(
+	schema.NewCallableStepWithSignals[*WaitStepData, WaitInput](
 		// ID of the step:
 		"wait",
 		// Add the input schema:
-		inputSchema,
+		waitInputSchema,
 		map[string]*schema.StepOutputSchema{
 			// Define possible outputs:
 			"success": schema.NewStepOutputSchema(
 				// Add the output schema:
-				outputSchema,
+				waitOutputSchema,
 				schema.NewDisplayValue(
 					schema.PointerTo("Success"),
 					schema.PointerTo("Successfully waited"),
@@ -128,7 +178,7 @@ var WaitSchema = schema.NewCallableSchema(
 				false,
 			),
 			"cancelled_early": schema.NewStepOutputSchema(
-				outputSchema,
+				waitOutputSchema,
 				schema.NewDisplayValue(
 					schema.PointerTo("Cancelled Early"),
 					schema.PointerTo("Was cancelled before the expected wait period passed."),
@@ -137,7 +187,7 @@ var WaitSchema = schema.NewCallableSchema(
 				false,
 			),
 			"terminated_early": schema.NewStepOutputSchema(
-				outputSchema,
+				waitOutputSchema,
 				schema.NewDisplayValue(
 					schema.PointerTo("Terminated Early"),
 					schema.PointerTo("Was terminated before the expected wait period passed."),
@@ -160,5 +210,32 @@ var WaitSchema = schema.NewCallableSchema(
 		waitInitializer_,
 		// Reference the function
 		wait_,
+	),
+	schema.NewCallableStep[HelloWorldInput](
+		// ID of the step
+		"hello",
+		// Input schema of the step
+		helloWorldInputSchema,
+		// Output schema of the step
+		map[string]*schema.StepOutputSchema{
+			"success": schema.NewStepOutputSchema(
+				helloWorldOutputSchema,
+				schema.NewDisplayValue(schema.PointerTo("success"), schema.PointerTo("The step was instructed to succeed."), nil),
+				false,
+			),
+			"error": schema.NewStepOutputSchema(
+				helloWorldOutputSchema,
+				schema.NewDisplayValue(schema.PointerTo("error"), schema.PointerTo("The step was instructed to fail."), nil),
+				true,
+			),
+		},
+		// Display value
+		schema.NewDisplayValue(
+			schema.PointerTo("Hello"),
+			schema.PointerTo("A simple hello step with two outputs."),
+			nil,
+		),
+		// Function handler
+		helloWorld_,
 	),
 )
