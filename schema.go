@@ -139,7 +139,7 @@ func wait_(ctx context.Context, waitData *WaitStepData, input WaitInput) (string
 			fmt.Sprintf("Plugin cancelled early due to context done after %d ms after scheduled to sleep for %d ms.",
 				duration.Milliseconds(), input.WaitTime),
 		}
-	case _ = <-waitData.cancellationChannel: // Cancelled
+	case <-waitData.cancellationChannel: // Cancelled
 		duration := time.Since(start)
 		return "cancelled_early", WaitOutput{
 			fmt.Sprintf("Plugin cancelled early from signal after %d ms after scheduled to sleep for %d ms.",
@@ -155,7 +155,7 @@ type WaitStepData struct {
 
 func waitInitializer_() *WaitStepData {
 	return &WaitStepData{
-		make(chan bool, 0),
+		make(chan bool),
 	}
 }
 
