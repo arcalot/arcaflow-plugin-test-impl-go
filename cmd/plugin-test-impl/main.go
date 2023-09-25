@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	plugin.Run(testimplplugin.WaitSchema)
+	plugin.Run(testimplplugin.TestStepsSchema)
 }
