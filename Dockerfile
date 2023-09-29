@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine AS build
+FROM golang:1.21-alpine@sha256:4bc6541af94a67d9dcabba9826c36e4e9497dacf4e8755ac503000b6ff75318f AS build
 
 ENV CGO_ENABLED=0
 COPY . /src
