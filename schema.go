@@ -155,7 +155,7 @@ type WaitStepData struct {
 
 func waitInitializer_() *WaitStepData {
 	return &WaitStepData{
-		make(chan bool),
+		make(chan bool, 3),
 	}
 }
 
