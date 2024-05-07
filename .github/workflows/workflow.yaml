@@ -8,7 +8,7 @@ on:
       - published
 
 env:
-  QUAY_TAG_ROOT: quay.io/${{ secrets.QUAY_NAMESPACE }}/arcaflow-plugin-test-impl
+  QUAY_TAG_ROOT: quay.io/${{ secrets.QUAY_NAMESPACE }}/arcaflow-plugin-test-impl-go
   QUAY_IMG_EXP: 0
   BUILD_PLATFORMS: linux/amd64, linux/arm64
 
