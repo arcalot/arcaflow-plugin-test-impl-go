@@ -6,24 +6,62 @@ on:
   release:
     types:
       - published
-jobs:
-  act:
-    uses: arcalot/arcaflow-container-toolkit/.github/workflows/reusable_workflow.yaml@buildah
-    with:
-      image_name: ${{ github.event.repository.name }}
-      image_tag: 'latest'
-      multi_arch: true
-    secrets:
-      QUAY_NAMESPACE: ${{ secrets.QUAY_NAMESPACE }}
-      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
-      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
 
-  docsgen:
-    if: github.ref != 'refs/heads/main' && github.event_name != 'release'
-    needs: act
-    uses: arcalot/arcaflow-docsgen/.github/workflows/reusable_workflow.yaml@main
-    permissions:
-      contents: write
-      pull-requests: write
-    with:
-      plugin_path: "arcaflow_plugin_template_python/template_python_plugin.py"
+env:
+  QUAY_TAG_ROOT: quay.io/${{ secrets.QUAY_NAMESPACE }}/${{ inputs.image_name }}
+  QUAY_IMG_EXP: 0
+  BUILD_PLATFORMS: linux/amd64, linux/arm64
+
+jobs:
+  act-build:
+    name: Build ${{ github.ref_name }} from ${{ github.event_name }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set image tags for release
+        if: github.event_name == 'release'
+        run: |
+          echo "IMAGE_TAGS=${{ env.QUAY_TAG_ROOT }}:${GITHUB_REF#refs/*/} ${{ env.QUAY_TAG_ROOT }}:latest" >> $GITHUB_ENV
+      
+      - name: Set image tags for main
+        if: github.ref == 'refs/heads/main' && github.event_name != 'release'
+        run: |
+          echo "IMAGE_TAGS=${{ env.QUAY_TAG_ROOT }}:main_latest" >> $GITHUB_ENV
+
+      - name: Set image tags and expiration for dev
+        if: github.ref != 'refs/heads/main' && github.event_name != 'release'
+        run: |
+          export commit_hash=${{ github.sha }}
+          echo "QUAY_IMG_EXP=90d" >> $GITHUB_ENV
+          echo "IMAGE_TAGS=${{ env.QUAY_TAG_ROOT }}:${GITHUB_REF##*/}_${commit_hash:0:7}" >> $GITHUB_ENV
+      
+      - name: Checkout this project
+        uses: actions/checkout@v4
+      
+      - name: Install qemu dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
+      - name: Log in to quay.io for multi-arch
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      
+      - name: Build multi-arch image
+        id: build-multi-arch
+        uses: redhat-actions/buildah-build@v2
+        with:
+          context: .
+          platforms: ${{ env.BUILD_PLATFORMS }}
+          tags: ${{ env.IMAGE_TAGS }}
+          containerfiles: |
+            ./Dockerfile
+          labels: quay.expires-after=${{ env.QUAY_IMG_EXP }}
+      
+      - name: Push image to quay.io
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-multi-arch.outputs.image }}
+          tags: ${{ steps.build-multi-arch.outputs.tags }}
