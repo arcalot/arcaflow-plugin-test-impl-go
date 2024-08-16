@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	plugin.Run(testimplplugin.TestStepsSchema)
+	plugin.Run(testimplplugin.GetSchema())
 }

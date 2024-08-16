@@ -9,7 +9,7 @@ import (
 )
 
 type HelloWorldInput struct {
-	fail bool
+	Fail bool `json:"fail"`
 }
 
 type HelloWorldOutput struct {
@@ -51,7 +51,7 @@ var helloWorldOutputSchema = schema.NewScopeSchema(
 )
 
 func helloWorld_(ctx context.Context, input HelloWorldInput) (string, any) {
-	if input.fail {
+	if input.Fail {
 		return "error", HelloWorldOutput{}
 	} else {
 		return "success", HelloWorldOutput{}
@@ -159,83 +159,86 @@ func waitInitializer_() *WaitStepData {
 	}
 }
 
-var TestStepsSchema = schema.NewCallableSchema(
-	schema.NewCallableStepWithSignals[*WaitStepData, WaitInput](
-		// ID of the step:
-		"wait",
-		// Add the input schema:
-		waitInputSchema,
-		map[string]*schema.StepOutputSchema{
-			// Define possible outputs:
-			"success": schema.NewStepOutputSchema(
-				// Add the output schema:
-				waitOutputSchema,
-				schema.NewDisplayValue(
-					schema.PointerTo("Success"),
-					schema.PointerTo("Successfully waited"),
-					nil,
+//nolint:funlen // The schema is long.
+func GetSchema() *schema.CallableSchema {
+	return schema.NewCallableSchema(
+		schema.NewCallableStepWithSignals[*WaitStepData, WaitInput](
+			// ID of the step:
+			"wait",
+			// Add the input schema:
+			waitInputSchema,
+			map[string]*schema.StepOutputSchema{
+				// Define possible outputs:
+				"success": schema.NewStepOutputSchema(
+					// Add the output schema:
+					waitOutputSchema,
+					schema.NewDisplayValue(
+						schema.PointerTo("Success"),
+						schema.PointerTo("Successfully waited"),
+						nil,
+					),
+					false,
 				),
-				false,
-			),
-			"cancelled_early": schema.NewStepOutputSchema(
-				waitOutputSchema,
-				schema.NewDisplayValue(
-					schema.PointerTo("Cancelled Early"),
-					schema.PointerTo("Was cancelled before the expected wait period passed."),
-					nil,
+				"cancelled_early": schema.NewStepOutputSchema(
+					waitOutputSchema,
+					schema.NewDisplayValue(
+						schema.PointerTo("Cancelled Early"),
+						schema.PointerTo("Was cancelled before the expected wait period passed."),
+						nil,
+					),
+					false,
 				),
-				false,
-			),
-			"terminated_early": schema.NewStepOutputSchema(
-				waitOutputSchema,
-				schema.NewDisplayValue(
-					schema.PointerTo("Terminated Early"),
-					schema.PointerTo("Was terminated before the expected wait period passed."),
-					nil,
+				"terminated_early": schema.NewStepOutputSchema(
+					waitOutputSchema,
+					schema.NewDisplayValue(
+						schema.PointerTo("Terminated Early"),
+						schema.PointerTo("Was terminated before the expected wait period passed."),
+						nil,
+					),
+					false,
 				),
-				false,
+			},
+			map[string]schema.CallableSignal{
+				plugin.CancellationSignalSchema.ID(): schema.NewCallableSignalFromSchema(plugin.CancellationSignalSchema, cancelWait_),
+			},
+			// No emitted signals
+			map[string]*schema.SignalSchema{},
+			// Metadata for the function:
+			schema.NewDisplayValue(
+				schema.PointerTo("Wait"),
+				schema.PointerTo("Wait for specified time."),
+				nil,
 			),
-		},
-		map[string]schema.CallableSignal{
-			plugin.CancellationSignalSchema.ID(): schema.NewCallableSignalFromSchema(plugin.CancellationSignalSchema, cancelWait_),
-		},
-		// No emitted signals
-		map[string]*schema.SignalSchema{},
-		// Metadata for the function:
-		schema.NewDisplayValue(
-			schema.PointerTo("Wait"),
-			schema.PointerTo("Wait for specified time."),
-			nil,
+			waitInitializer_,
+			// Reference the function
+			wait_,
 		),
-		waitInitializer_,
-		// Reference the function
-		wait_,
-	),
-	schema.NewCallableStep[HelloWorldInput](
-		// ID of the step
-		"hello",
-		// Input schema of the step
-		helloWorldInputSchema,
-		// Output schema of the step
-		map[string]*schema.StepOutputSchema{
-			"success": schema.NewStepOutputSchema(
-				helloWorldOutputSchema,
-				schema.NewDisplayValue(schema.PointerTo("success"), schema.PointerTo("The step was instructed to succeed."), nil),
-				false,
+		schema.NewCallableStep[HelloWorldInput](
+			// ID of the step
+			"hello",
+			// Input schema of the step
+			helloWorldInputSchema,
+			// Output schema of the step
+			map[string]*schema.StepOutputSchema{
+				"success": schema.NewStepOutputSchema(
+					helloWorldOutputSchema,
+					schema.NewDisplayValue(schema.PointerTo("success"), schema.PointerTo("The step was instructed to succeed."), nil),
+					false,
+				),
+				"error": schema.NewStepOutputSchema(
+					helloWorldOutputSchema,
+					schema.NewDisplayValue(schema.PointerTo("error"), schema.PointerTo("The step was instructed to fail."), nil),
+					true,
+				),
+			},
+			// Display value
+			schema.NewDisplayValue(
+				schema.PointerTo("Hello"),
+				schema.PointerTo("A simple hello step with two outputs."),
+				nil,
 			),
-			"error": schema.NewStepOutputSchema(
-				helloWorldOutputSchema,
-				schema.NewDisplayValue(schema.PointerTo("error"), schema.PointerTo("The step was instructed to fail."), nil),
-				true,
-			),
-		},
-		// Display value
-		schema.NewDisplayValue(
-			schema.PointerTo("Hello"),
-			schema.PointerTo("A simple hello step with two outputs."),
-			nil,
+			// Function handler
+			helloWorld_,
 		),
-		// Function handler
-		helloWorld_,
-	),
-)
+	)
+}
