@@ -159,6 +159,7 @@ func waitInitializer_() *WaitStepData {
 	}
 }
 
+//nolint:funlen The schema is long.
 func GetSchema() *schema.CallableSchema {
 	return schema.NewCallableSchema(
 		schema.NewCallableStepWithSignals[*WaitStepData, WaitInput](
